@@ -39,7 +39,7 @@ df_new= df_new.fillna(0)
 #save means of RT
 means=df.groupby(['task','set_size','subject'])[['RT']].mean()
 
-means=means.unstack()
+#means=means.unstack()
 
 means.to_csv('')
 
