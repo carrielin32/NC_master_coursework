@@ -13,7 +13,7 @@ spm_jobman('initcfg');
 
 %%======define parameters in a general structure 'w'=====
 w.dataDir  = '/Users/carrielin/Documents/MATLAB/basic_fMRI_course/1_Data/';  %raw data
-w.subjects = {'sub07','sub08', 'sub09', 'sub10', 'sub11', 'sub12', 'sub13', 'sub14', 'sub15', 'sub16', 'sub17', 'sub18', 'sub61','sub62','sub63','sub64','sub65',
+w.subjects = {'sub07','sub08', 'sub09', 'sub10', 'sub11', 'sub12', 'sub13', 'sub14', 'sub15', 'sub16', 'sub17', 'sub18', 'sub61','sub62','sub63','sub64',
     'sub65','sub66'}; % without low accuracy ones (parent= dataDir)
 
 w.structDir = 't1'; % structural directory (parent=subject)
