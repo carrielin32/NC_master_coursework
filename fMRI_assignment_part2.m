@@ -1,4 +1,4 @@
-function fMRI_firstlevel_Preprocessig_language
+function fMRI_firstlevel_Preprocessing_language
 
 % example of first-level implementation for SPM12 
 % original scripts: https://github.com/blri/CREx_fMRI
