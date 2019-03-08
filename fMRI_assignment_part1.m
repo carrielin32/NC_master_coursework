@@ -13,8 +13,7 @@ spm_jobman('initcfg');
 
 %%======define parameters in a general structure 'w'=====
 w.dataDir  = '/Users/carrielin/Documents/MATLAB/basic_fMRI_course/1_Data/';  %raw data
-w.subjects = {'sub07','sub08', 'sub09', 'sub10', 'sub11', 'sub12', 'sub13', 'sub14', 'sub15', 'sub16', 'sub17', 'sub18', 'sub61','sub62','sub63','sub64',
-    'sub65','sub66'}; % without low accuracy ones (parent= dataDir)
+w.subjects = {'07','08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18', '61','62','63','64','65','66'}; % without low accuracy ones (parent= dataDir)
 
 w.structDir = 't1'; % structural directory (parent=subject)
 w.sessions = {'picnam','verbgen'}; %session directory (parent=subject)
@@ -42,6 +41,7 @@ DoSliceTiming(w);
 DoRealignunwarp(w);
 DoCoregister(w);
 DoSegment(w);
+DoNormalise(w);
 
 %%========================================================
     end 
@@ -202,5 +202,66 @@ function DoSegment(w)
     
 end
 
+function DoNormalise(w)
+
+    % do normalization on coregisterd t1
+    
+    % get field deformation image 
+    forwardDeformation = spm_select('FPList', w.structPath, ['^y_' '.*\.nii$']);
+    
+    % get coregistered structural image 
+    coregAnat = cellstr(spm_select('FPList', w.structPath, '^.*\.nii$'));
+    
+    % Get c1  c2  and c3 
+    c1 = spm_select('FPList', w.T1Path, ['^c1' w.subName  '.*\.nii$']); 
+    c2 = spm_select('FPList', w.T1Path, ['^c2' w.subName   '.*\.nii$']);  
+    c3 = spm_select('FPList', w.T1Path, ['^c3' w.subName   '.*\.nii$']);  
+    c1c2c3 = vertcat(c1, c2, c3);   
+
+    clear matlabbatch;         
+    matlabbatch{1}.spm.spatial.normalise.write.subj.def = {forwardDeformation};
+    matlabbatch{1}.spm.spatial.normalise.write.subj.resample = {coregAnat};
+    matlabbatch{1}.spm.spatial.normalise.write.woptions.bb = NaN(2,3);
+    matlabbatch{1}.spm.spatial.normalise.write.woptions.vox = [1 1 1];
+    matlabbatch{1}.spm.spatial.normalise.write.woptions.interp = 4;
+    
+    matlabbatch{2}.spm.spatial.normalise.write.subj.def(1) = {forwardDeformation};
+    matlabbatch{2}.spm.spatial.normalise.write.subj.resample = cellstr(c1c2c3) ;   
+    matlabbatch{2}.spm.spatial.normalise.write.woptions.bb = NaN(2,3);
+    matlabbatch{2}.spm.spatial.normalise.write.woptions.vox = [w.thickness w.thickness w.thickness];
+    matlabbatch{2}.spm.spatial.normalise.write.woptions.interp = 4;         
+
+    save(fullfile(w.subPath, 'SPM12_matlabbatch_5_Normalize.mat'),'matlabbatch');   
+    
+    spm_jobman('initcfg');
+    spm_jobman('run',matlabbatch);  
+
+end
+
+function DoExplicitMask(w)
+
+    %% Get normalized tissus (grey and white matter, CSF) from anatomical scan
+  
+    wc1 = spm_select('FPList', w.structPath, ['^wc1' '.*\.nii$']); 
+    wc2 = spm_select('FPList', w.structPath, ['^wc2' '.*\.nii$']); 
+    wc3 = spm_select('FPList', w.structPath, ['^wc3' '.*\.nii$']); 
+
+    P = [wc1; wc2; wc3];  
+    
+    matlabbatch{1}.spm.util.imcalc.input = cellstr(P);
+    matlabbatch{1}.spm.util.imcalc.output = fullfile(w.structPath, 'explicitMask_wc1wc2wc3_0.3.nii');
+    matlabbatch{1}.spm.util.imcalc.outdir = {''};
+    matlabbatch{1}.spm.util.imcalc.expression = '(i1 + i2 +i3)>0.3';
+    matlabbatch{1}.spm.util.imcalc.options.dmtx = 0;
+    matlabbatch{1}.spm.util.imcalc.options.mask = 0;
+    matlabbatch{1}.spm.util.imcalc.options.interp = 1;
+    matlabbatch{1}.spm.util.imcalc.options.dtype = 4;   
+       
+    save(fullfile(w.subPath, 'SPM12_matlabbatch_6_Mask.mat'),'matlabbatch'); 
+
+    spm_jobman('initcfg');
+    spm_jobman('run',matlabbatch);  
+    
+end
 
         
