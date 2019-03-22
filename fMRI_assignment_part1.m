@@ -13,7 +13,7 @@ spm_jobman('initcfg');
 
 %%======define parameters in a general structure 'w'=====
 w.dataDir  = '/Users/carrielin/Documents/MATLAB/basic_fMRI_course/1_Data/';  %raw data
-w.subjects = {'07','08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18', '61','62','63','64','65','66'}; % without low accuracy ones (parent= dataDir)
+w.subjects = {'08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18', '61','62','63','64','65','66'}; % without low accuracy ones (parent= dataDir)
 
 w.structDir = 't1'; % structural directory (parent=subject)
 w.sessions = {'picnam','verbgen'}; %session directory (parent=subject)
@@ -42,6 +42,7 @@ DoRealignunwarp(w);
 DoCoregister(w);
 DoSegment(w);
 DoNormalise(w);
+DoExplicitMask(w);
 
 %%========================================================
     end 
@@ -79,16 +80,27 @@ end
 function DoRealignunwarp(w)
     clear matlabbatch 
     
+    EPI = {}
     % loop for sessions 
-    matlabbatch{1}.spm.spatial.realign.estwrite.data = {};
+    %matlabbatch{1}.spm.spatial.realignunwarp.data = {};
     for j=1:numel(w.sessions)
         %% Get files after slice timing           
         f = spm_select('ExtFPList',  fullfile(w.subPath, w.sessions{j}), ['^a' '.*' '.*\.nii$'], Inf);
-        matlabbatch{1}.spm.spatial.realignunwarp.data{j} = cellstr(f);
-        %%
+        
+        matlabbatch{1}.spm.spatial.realignunwarp.data{j}.scans = cellstr(f);
+        matlabbatch{1}.spm.spatial.realignunwarp.data{j}.pmscan = '';
+        
     end
-    
-    
+%%    
+    %f_p = spm_select('ExtFPList',  fullfile(w.subPath,'picnam'), ['^a' '.*' '.*\.nii$'], Inf);
+    %matlabbatch{1}.spm.spatial.realignunwarp.data(1).scans = cellstr(f_p);
+%%
+    %matlabbatch{1}.spm.spatial.realignunwarp.data(1).pmscan = '';
+%%
+    %f_v = spm_select('ExtFPList',  fullfile(w.subPath,'verbgen'), ['^a' '.*' '.*\.nii$'], Inf);
+    %matlabbatch{1}.spm.spatial.realignunwarp.data(2).scans = cellstr(f_v);
+%%
+    %matlabbatch{1}.spm.spatial.realignunwarp.data(2).pmscan = '';
     matlabbatch{1}.spm.spatial.realignunwarp.eoptions.quality = 0.9;
     matlabbatch{1}.spm.spatial.realignunwarp.eoptions.sep = 4;
     matlabbatch{1}.spm.spatial.realignunwarp.eoptions.fwhm = 5;
@@ -150,50 +162,87 @@ function DoSegment(w)
     
     
     % get template of each cerebral tissue 
-    tmpGM         = {'/Users/carrielin/Documents/MATLAB/spm12/tpm/TPM.nii,1'};
-    tmpWM         = {'/Users/carrielin/Documents/MATLAB/spm12/tpm/TPM.nii,2'};
-    tmpCSF        = {'/Users/carrielin/Documents/MATLAB/spm12/tpm/TPM.nii,3'};
-    tmpBone       = {'/Users/carrielin/Documents/MATLAB/spm12/tpm/TPM.nii,4'};      
-    tmpSoftTissue = {'/Users/carrielin/Documents/MATLAB/spm12/tpm/TPM.nii,5'};              
-    tmpAirBck     = {'/Users/carrielin/Documents/MATLAB/spm12/tpm/TPM.nii,6'};  
+    %tmpGM         = {'/Users/carrielin/Documents/MATLAB/spm12/tpm/TPM.nii,1'};
+    %tmpWM         = {'/Users/carrielin/Documents/MATLAB/spm12/tpm/TPM.nii,2'};
+    %tmpCSF        = {'/Users/carrielin/Documents/MATLAB/spm12/tpm/TPM.nii,3'};
+    %tmpBone       = {'/Users/carrielin/Documents/MATLAB/spm12/tpm/TPM.nii,4'};      
+    %tmpSoftTissue = {'/Users/carrielin/Documents/MATLAB/spm12/tpm/TPM.nii,5'};              
+    %tmpAirBck     = {'/Users/carrielin/Documents/MATLAB/spm12/tpm/TPM.nii,6'};  
     
     clear matlabbatch;
     
-    matlabbatch{1}.spm.spatial.preproc.channel.vols = coregAnat;
-    matlabbatch{1}.spm.spatial.preproc.channel.biasreg = 0.001; % Bias regularisation light
-    matlabbatch{1}.spm.spatial.preproc.channel.biasfwhm = 60;  % 60 mm cutoff
-    matlabbatch{1}.spm.spatial.preproc.channel.write = [1 1];     
-    matlabbatch{1}.spm.spatial.preproc.tissue(1).tpm = tmpGM;
+    matlabbatch{1}.spm.spatial.preproc.channel.vols(1) = coregAnat;
+    matlabbatch{1}.spm.spatial.preproc.channel.biasreg = 0.001;
+    matlabbatch{1}.spm.spatial.preproc.channel.biasfwhm = 60;   
+    matlabbatch{1}.spm.spatial.preproc.channel.write = [0 1];
+    matlabbatch{1}.spm.spatial.preproc.tissue(1).tpm = {'/Users/carrielin/Documents/MATLAB/spm12/tpm/TPM.nii,1'};
     matlabbatch{1}.spm.spatial.preproc.tissue(1).ngaus = 1;
-    matlabbatch{1}.spm.spatial.preproc.tissue(1).native = [1 0];  %native
-    matlabbatch{1}.spm.spatial.preproc.tissue(1).warped = [0 0];  
-    matlabbatch{1}.spm.spatial.preproc.tissue(2).tpm = tmpWM;
+    matlabbatch{1}.spm.spatial.preproc.tissue(1).native = [1 0];
+    matlabbatch{1}.spm.spatial.preproc.tissue(1).warped = [0 0];
+    matlabbatch{1}.spm.spatial.preproc.tissue(2).tpm = {'/Users/carrielin/Documents/MATLAB/spm12/tpm/TPM.nii,2'};
     matlabbatch{1}.spm.spatial.preproc.tissue(2).ngaus = 1;
-    matlabbatch{1}.spm.spatial.preproc.tissue(2).native = [1 0];  %native
-    matlabbatch{1}.spm.spatial.preproc.tissue(2).warped = [0 0];       
-    matlabbatch{1}.spm.spatial.preproc.tissue(3).tpm = tmpCSF;
+    matlabbatch{1}.spm.spatial.preproc.tissue(2).native = [1 0];
+    matlabbatch{1}.spm.spatial.preproc.tissue(2).warped = [0 0];
+    matlabbatch{1}.spm.spatial.preproc.tissue(3).tpm = {'/Users/carrielin/Documents/MATLAB/spm12/tpm/TPM.nii,3'};
     matlabbatch{1}.spm.spatial.preproc.tissue(3).ngaus = 2;
-    matlabbatch{1}.spm.spatial.preproc.tissue(3).native = [1 0];  %native
-    matlabbatch{1}.spm.spatial.preproc.tissue(3).warped = [0 0];   
-    matlabbatch{1}.spm.spatial.preproc.tissue(4).tpm = tmpBone;
+    matlabbatch{1}.spm.spatial.preproc.tissue(3).native = [1 0];
+    matlabbatch{1}.spm.spatial.preproc.tissue(3).warped = [0 0];
+    matlabbatch{1}.spm.spatial.preproc.tissue(4).tpm = {'/Users/carrielin/Documents/MATLAB/spm12/tpm/TPM.nii,4'};
     matlabbatch{1}.spm.spatial.preproc.tissue(4).ngaus = 3;
-    matlabbatch{1}.spm.spatial.preproc.tissue(4).native = [1 0];  %native
+    matlabbatch{1}.spm.spatial.preproc.tissue(4).native = [1 0];
     matlabbatch{1}.spm.spatial.preproc.tissue(4).warped = [0 0];
-    matlabbatch{1}.spm.spatial.preproc.tissue(5).tpm = tmpSoftTissue;
+    matlabbatch{1}.spm.spatial.preproc.tissue(5).tpm = {'/Users/carrielin/Documents/MATLAB/spm12/tpm/TPM.nii,5'};
     matlabbatch{1}.spm.spatial.preproc.tissue(5).ngaus = 4;
-    matlabbatch{1}.spm.spatial.preproc.tissue(5).native = [1 0];  %native
-    matlabbatch{1}.spm.spatial.preproc.tissue(5).warped = [0 0];        
-    matlabbatch{1}.spm.spatial.preproc.tissue(6).tpm = tmpAirBck;
+    matlabbatch{1}.spm.spatial.preproc.tissue(5).native = [1 0];
+    matlabbatch{1}.spm.spatial.preproc.tissue(5).warped = [0 0];
+    matlabbatch{1}.spm.spatial.preproc.tissue(6).tpm = {'/Users/carrielin/Documents/MATLAB/spm12/tpm/TPM.nii,6'};
     matlabbatch{1}.spm.spatial.preproc.tissue(6).ngaus = 2;
     matlabbatch{1}.spm.spatial.preproc.tissue(6).native = [0 0];
-    matlabbatch{1}.spm.spatial.preproc.tissue(6).warped = [0 0];     
+    matlabbatch{1}.spm.spatial.preproc.tissue(6).warped = [0 0];
     matlabbatch{1}.spm.spatial.preproc.warp.mrf = 1;
     matlabbatch{1}.spm.spatial.preproc.warp.cleanup = 1;
     matlabbatch{1}.spm.spatial.preproc.warp.reg = [0 0.001 0.5 0.05 0.2];
     matlabbatch{1}.spm.spatial.preproc.warp.affreg = 'mni';
     matlabbatch{1}.spm.spatial.preproc.warp.fwhm = 0;
     matlabbatch{1}.spm.spatial.preproc.warp.samp = 3;
-    matlabbatch{1}.spm.spatial.preproc.warp.write = [0 1];   %  Forward
+    matlabbatch{1}.spm.spatial.preproc.warp.write = [0 1];  %forward
+
+    
+    %matlabbatch{1}.spm.spatial.preproc.channel.vols = coregAnat;
+    %matlabbatch{1}.spm.spatial.preproc.channel.biasreg = 0.001; % Bias regularisation light
+    %matlabbatch{1}.spm.spatial.preproc.channel.biasfwhm = 60;  % 60 mm cutoff
+    %matlabbatch{1}.spm.spatial.preproc.channel.write = [1 1];     
+    %matlabbatch{1}.spm.spatial.preproc.tissue(1).tpm = tmpGM;
+    %matlabbatch{1}.spm.spatial.preproc.tissue(1).ngaus = 1;
+    %matlabbatch{1}.spm.spatial.preproc.tissue(1).native = [1 0];  %native
+    %matlabbatch{1}.spm.spatial.preproc.tissue(1).warped = [0 0];  
+    %matlabbatch{1}.spm.spatial.preproc.tissue(2).tpm = tmpWM;
+    %matlabbatch{1}.spm.spatial.preproc.tissue(2).ngaus = 1;
+    %matlabbatch{1}.spm.spatial.preproc.tissue(2).native = [1 0];  %native
+    %matlabbatch{1}.spm.spatial.preproc.tissue(2).warped = [0 0];       
+    %matlabbatch{1}.spm.spatial.preproc.tissue(3).tpm = tmpCSF;
+    %matlabbatch{1}.spm.spatial.preproc.tissue(3).ngaus = 2;
+    %matlabbatch{1}.spm.spatial.preproc.tissue(3).native = [1 0];  %native
+    %matlabbatch{1}.spm.spatial.preproc.tissue(3).warped = [0 0];   
+    %matlabbatch{1}.spm.spatial.preproc.tissue(4).tpm = tmpBone;
+    %matlabbatch{1}.spm.spatial.preproc.tissue(4).ngaus = 3;
+    %matlabbatch{1}.spm.spatial.preproc.tissue(4).native = [1 0];  %native
+    %matlabbatch{1}.spm.spatial.preproc.tissue(4).warped = [0 0];
+    %matlabbatch{1}.spm.spatial.preproc.tissue(5).tpm = tmpSoftTissue;
+    %matlabbatch{1}.spm.spatial.preproc.tissue(5).ngaus = 4;
+    %matlabbatch{1}.spm.spatial.preproc.tissue(5).native = [1 0];  %native
+    %matlabbatch{1}.spm.spatial.preproc.tissue(5).warped = [0 0];        
+    %matlabbatch{1}.spm.spatial.preproc.tissue(6).tpm = tmpAirBck;
+    %matlabbatch{1}.spm.spatial.preproc.tissue(6).ngaus = 2;
+    %matlabbatch{1}.spm.spatial.preproc.tissue(6).native = [0 0];
+    %matlabbatch{1}.spm.spatial.preproc.tissue(6).warped = [0 0];     
+    %matlabbatch{1}.spm.spatial.preproc.warp.mrf = 1;
+    %matlabbatch{1}.spm.spatial.preproc.warp.cleanup = 1;
+    %matlabbatch{1}.spm.spatial.preproc.warp.reg = [0 0.001 0.5 0.05 0.2];
+    %matlabbatch{1}.spm.spatial.preproc.warp.affreg = 'mni';
+    %matlabbatch{1}.spm.spatial.preproc.warp.fwhm = 0;
+    %matlabbatch{1}.spm.spatial.preproc.warp.samp = 3;
+    %matlabbatch{1}.spm.spatial.preproc.warp.write = [0 1];   %  Forward
 
     save(fullfile(w.subPath, 'SPM12_matlabbatch_4_Segment.mat'),'matlabbatch');     
     
@@ -207,15 +256,15 @@ function DoNormalise(w)
     % do normalization on coregisterd t1
     
     % get field deformation image 
-    forwardDeformation = spm_select('FPList', w.structPath, ['^y_' '.*\.nii$']);
+    forwardDeformation = spm_select('FPList', w.structPath, ['^y_' 'sub' w.subName '.*\.nii$']);
     
     % get coregistered structural image 
-    coregAnat = cellstr(spm_select('FPList', w.structPath, '^.*\.nii$'));
+    coregAnat = spm_select('FPList', w.structPath, ['^' 'sub' w.subName '.*\.nii$']);
     
     % Get c1  c2  and c3 
-    c1 = spm_select('FPList', w.T1Path, ['^c1' w.subName  '.*\.nii$']); 
-    c2 = spm_select('FPList', w.T1Path, ['^c2' w.subName   '.*\.nii$']);  
-    c3 = spm_select('FPList', w.T1Path, ['^c3' w.subName   '.*\.nii$']);  
+    c1 = spm_select('FPList', w.structPath, ['^c1' 'sub' w.subName  '.*\.nii$']); 
+    c2 = spm_select('FPList', w.structPath, ['^c2' 'sub' w.subName  '.*\.nii$']);  
+    c3 = spm_select('FPList', w.structPath, ['^c3' 'sub' w.subName  '.*\.nii$']);  
     c1c2c3 = vertcat(c1, c2, c3);   
 
     clear matlabbatch;         
